@@ -4,6 +4,8 @@ const { check, validationResult } = require("express-validator");
 const User = require("../../models/User");
 const gravatar = require("gravatar");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const config = require("config");
 
 // @route POST api/users
 // @desc Register a user
@@ -39,12 +41,25 @@ router.post(
       // Fetch gravitar
       const avatar = gravatar.url(email, { s: "200", r: "pg", d: "mm" });
       user = new User({ name, email, avatar, password });
-      // Encrypt pw and save user to db
+      // Encrypt pw and create new user on db
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
       await user.save();
-      // Return JWT
-      res.send(`Registering ${req.body.name}`);
+      // Fetch JWT from db
+      const payload = { user: { id: user.id } };
+      jwt.sign(
+        payload,
+        config.get("jwtSecret"),
+        { expiresIn: 3600000 }, // change to 3600 for production
+        (err, token) => {
+          if (err) {
+            throw err;
+          } else {
+            res.json({ token });
+          }
+        }
+      );
+      // res.send(`Registering ${req.body.name}`);
     } catch (err) {
       console.log(err.message);
       res.status(500).send(`Server error: ${err.message}`);
