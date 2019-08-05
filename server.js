@@ -4,6 +4,11 @@ const connectDB = require("./config/db");
 const app = express();
 
 connectDB();
+
+// initialize middleware for parsing body
+app.use(express.json({ extended: false }));
+
+// Routes
 app.get("/", (req, res) => res.send("API up and running :)"));
 
 app.use("/api/users", require("./routes/api/users"));
